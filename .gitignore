@@ -1,0 +1,35 @@
+# Byte-compiled / optimized Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local development settings
+.env
+
+# Log files
+*.log
+
+# Temporary files
+/temp/
+*.tmp
+
+# Editor / IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependency directories
+venv/
+env/
+lib/
+libs/
+
+# Generated files
+output.zip
+
+# Compiled Python bytecode
+*.pyc
+
+# IDE files
+*.iml
