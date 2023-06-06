@@ -57,8 +57,38 @@ class UnmixResource(Resource):
             return str(e), 500
 
         return send_file(output_zip_path, mimetype='application/zip', as_attachment=True)
+    
+class UnmixYoutubeResource(Resource):
+    def post(self):
+        if 'url' not in request.json:
+            return "No url in request", 400
+        url = request.json['url']
+
+        output_directory = os.path.join('tmp', 'unmixed')  # Set the output directory path
+        os.makedirs(output_directory, exist_ok=True)  # Create the output directory if it doesn't exist
+
+        try:
+            unmixer = AudioUnmix()
+            unmixer.run_from_youtube(url, output_directory)
+
+            # Creating zip file
+            output_zip_path = os.path.join('tmp', 'audio_separated.zip')
+            with zipfile.ZipFile(output_zip_path, 'w') as zipf:
+                for root, dirs, files in os.walk(output_directory):
+                    for file in files:
+                        zipf.write(os.path.join(root, file))
+
+        except Exception as e:
+            # Log the exception message and traceback
+            print(f"Exception occurred: {str(e)}")
+            traceback.print_exc()
+            return str(e), 500
+
+        return send_file(output_zip_path, mimetype='application/zip', as_attachment=True)
+
 
 api.add_resource(UnmixResource, '/v1/unmix')
+api.add_resource(UnmixYoutubeResource, '/v1/unmix_youtube')
 
 if __name__ == '__main__':
     app.run(debug=True)

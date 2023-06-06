@@ -2,7 +2,8 @@ import torch
 import torchaudio
 import os
 from openunmix import predict
-
+from yt_dlp import YoutubeDL
+import ffmpeg
 class AudioUnmix:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,10 +32,11 @@ class AudioUnmix:
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'wav',
                 'preferredquality': '192',
+
             }],
-            'outtmpl': 'temp.wav',
+            'outtmpl': 'tmp/temp',
         }
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-        self.run('temp.wav', out_dir)
+        self.run('tmp/temp.wav', out_dir)
