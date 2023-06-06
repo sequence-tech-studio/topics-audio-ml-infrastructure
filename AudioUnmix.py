@@ -23,3 +23,18 @@ class AudioUnmix:
                 torch.tensor(estimate),
                 sample_rate=rate
             )
+            
+    def run_from_youtube(self, url, out_dir):
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'wav',
+                'preferredquality': '192',
+            }],
+            'outtmpl': 'temp.wav',
+        }
+        with YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
+        self.run('temp.wav', out_dir)
