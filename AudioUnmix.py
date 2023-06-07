@@ -3,7 +3,6 @@ import torchaudio
 import os
 from openunmix import predict
 from yt_dlp import YoutubeDL
-import numpy as np
 
 
 class AudioUnmix:
