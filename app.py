@@ -59,7 +59,7 @@ def unmix_audio():
         output_zip_path = run_audio_unmix(unmixer.run, output_directory, filepath)
 
         # Removing the temporary file
-        os.remove(filepath)
+        #os.remove(filepath)
 
     except Exception as e:
         return str(e), 500

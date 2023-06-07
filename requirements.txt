@@ -1,8 +1,9 @@
 torch
 torchaudio
 openunmix
-youtube-dl
+yt-dlp
 ffmpeg-python
 Flask
 Flask-RESTful
 werkzeug
+pysoundfile

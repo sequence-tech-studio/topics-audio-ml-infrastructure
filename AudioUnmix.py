@@ -3,13 +3,13 @@ import torchaudio
 import os
 from openunmix import predict
 from yt_dlp import YoutubeDL
-import ffmpeg
+
 class AudioUnmix:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def run(self, audio_file_path, out_dir):
-        audio, rate = torchaudio.load(audio_file_path, normalize=True)
+        audio, rate = torchaudio.load(audio_file_path)
         audio = audio.to(self.device)
         estimates = predict.separate(
             torch.as_tensor(audio).float(),
@@ -34,6 +34,7 @@ class AudioUnmix:
                 'preferredquality': '192',
 
             }],
+            'ffmpeg_location': "./Scripts/ffmpeg.exe",
             'outtmpl': 'tmp/temp',
         }
         with YoutubeDL(ydl_opts) as ydl:
