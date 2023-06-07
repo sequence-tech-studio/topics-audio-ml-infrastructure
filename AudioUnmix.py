@@ -3,6 +3,8 @@ import torchaudio
 import os
 from openunmix import predict
 from yt_dlp import YoutubeDL
+import numpy as np
+
 
 class AudioUnmix:
     def __init__(self):
@@ -19,6 +21,7 @@ class AudioUnmix:
         # Write separated audio to files
         for target, estimate in estimates.items():
             estimate = estimate[0].cpu().detach().numpy()
+          
             torchaudio.save(
                 os.path.join(out_dir, f"{target}.wav"), 
                 torch.tensor(estimate),
@@ -31,13 +34,11 @@ class AudioUnmix:
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'wav',
-                'preferredquality': '192',
-
             }],
-            'ffmpeg_location': "./Scripts/ffmpeg.exe",
             'outtmpl': 'tmp/temp',
         }
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
         self.run('tmp/temp.wav', out_dir)
+

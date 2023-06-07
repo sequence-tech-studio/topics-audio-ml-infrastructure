@@ -5,7 +5,6 @@ import traceback
 import zipfile
 from flask import Flask, request, send_file
 from flask_restful import Api, Resource
-from werkzeug.utils import secure_filename
 from AudioUnmix import AudioUnmix
 
 # Create Flask app
@@ -59,7 +58,7 @@ def unmix_audio():
         output_zip_path = run_audio_unmix(unmixer.run, output_directory, filepath)
 
         # Removing the temporary file
-        #os.remove(filepath)
+        os.remove(filepath)
 
     except Exception as e:
         return str(e), 500
@@ -85,4 +84,4 @@ def unmix_youtube():
     return send_file(output_zip_path, mimetype='application/zip', as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0',port=80)
