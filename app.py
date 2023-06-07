@@ -25,7 +25,7 @@ def run_audio_unmix(unmix_func, output_directory, *args):
             for root, dirs, files in os.walk(output_directory):
                 for file in files:
                     zipf.write(os.path.join(root, file))
-        
+                    os.remove(os.path.join(root, file))
         return output_zip_path
 
     except Exception as e:
@@ -59,7 +59,7 @@ def unmix_audio():
         output_zip_path = run_audio_unmix(unmixer.run, output_directory, filepath)
 
         # Removing the temporary file
-        # os.remove(filepath)
+        os.remove(filepath)
 
     except Exception as e:
         return str(e), 500
