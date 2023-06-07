@@ -19,7 +19,7 @@ jobs:
           python-version: 3.9
 
       - name: Install dependencies
-        run: pip install --upgrade pip && pip install -r requirements.txt4
+        run: pip install --upgrade pip && pip install -r requirements.txt
 
       - name: Install FFmpeg
         run: apt-get update && apt-get install -y ffmpeg
