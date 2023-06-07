@@ -1,94 +1,88 @@
-import zipfile
+import os
 import shutil
+import tempfile
 import traceback
+import zipfile
 from flask import Flask, request, send_file
 from flask_restful import Api, Resource
 from werkzeug.utils import secure_filename
 from AudioUnmix import AudioUnmix
 
-import os
-import tempfile
 # Create Flask app
 app = Flask(__name__)
 api = Api(app)
 
-class UnmixResource(Resource):
-    def post(self):
-        if 'audio' not in request.files:
-            return "No audio file in request", 400
-        file = request.files['audio']
+def create_output_directory(directory):
+    os.makedirs(directory, exist_ok=True)
 
-        if file.content_length > 50 * 1024 * 1024:
-            return "File size exceeds limit of 50MB", 400
+def run_audio_unmix(unmix_func, output_directory, *args):
+    try:
+        unmix_func(*args, output_directory)
 
-        # Create a temporary file and save the uploaded file's content into it
-        temp_file = tempfile.NamedTemporaryFile(delete=False)
-        file.save(temp_file.name)
-        filepath = temp_file.name
+        # Create a zip file
+        output_zip_path = os.path.join('tmp', 'audio_separated.zip')
+        with zipfile.ZipFile(output_zip_path, 'w') as zipf:
+            for root, dirs, files in os.walk(output_directory):
+                for file in files:
+                    zipf.write(os.path.join(root, file))
+        
+        return output_zip_path
 
-        # Debugging print statement
-        print(f"File saved at: {filepath}. File exists: {os.path.exists(filepath)}")
+    except Exception as e:
+        # Log the exception message and traceback
+        print(f"Exception occurred: {str(e)}")
+        traceback.print_exc()
+        raise
 
-        output_directory = os.path.join('tmp', 'unmixed')  # Set the output directory path
+@app.route('/v1/unmix', methods=['POST'])
+def unmix_audio():
+    if 'audio' not in request.files:
+        return "No audio file in request", 400
+    file = request.files['audio']
 
-        os.makedirs(output_directory, exist_ok=True)  # Create the output directory if it doesn't exist
+    if file.content_length > 50 * 1024 * 1024:
+        return "File size exceeds limit of 50MB", 400
 
-        # Debugging print statement
-        print(f"Output directory: {output_directory}. Directory exists: {os.path.isdir(output_directory)}")
+    # Create a temporary file and save the uploaded file's content into it
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+    file.save(temp_file.name)
+    filepath = temp_file.name
 
-        try:
-            unmixer = AudioUnmix()
-            unmixer.run(filepath, output_directory)
+    # Debugging print statement
+    print(f"File saved at: {filepath}. File exists: {os.path.exists(filepath)}")
 
-            # Creating zip file
-            output_zip_path = os.path.join('tmp', 'audio_separated.zip')
-            with zipfile.ZipFile(output_zip_path, 'w') as zipf:
-                for root, dirs, files in os.walk(output_directory):
-                    for file in files:
-                        zipf.write(os.path.join(root, file))
-            
-            # Removing the temporary file
-            #os.remove(filepath)
+    output_directory = os.path.join('tmp', 'unmixed')  # Set the output directory path
+    create_output_directory(output_directory)
 
-        except Exception as e:
-            # Log the exception message and traceback
-            print(f"Exception occurred: {str(e)}")
-            traceback.print_exc()
-            return str(e), 500
+    try:
+        unmixer = AudioUnmix()
+        output_zip_path = run_audio_unmix(unmixer.run, output_directory, filepath)
 
-        return send_file(output_zip_path, mimetype='application/zip', as_attachment=True)
-    
-class UnmixYoutubeResource(Resource):
-    def post(self):
-        if 'url' not in request.json:
-            return "No url in request", 400
-        url = request.json['url']
+        # Removing the temporary file
+        # os.remove(filepath)
 
-        output_directory = os.path.join('tmp', 'unmixed')  # Set the output directory path
-        os.makedirs(output_directory, exist_ok=True)  # Create the output directory if it doesn't exist
+    except Exception as e:
+        return str(e), 500
 
-        try:
-            unmixer = AudioUnmix()
-            unmixer.run_from_youtube(url, output_directory)
+    return send_file(output_zip_path, mimetype='application/zip', as_attachment=True)
 
-            # Creating zip file
-            output_zip_path = os.path.join('tmp', 'audio_separated.zip')
-            with zipfile.ZipFile(output_zip_path, 'w') as zipf:
-                for root, dirs, files in os.walk(output_directory):
-                    for file in files:
-                        zipf.write(os.path.join(root, file))
+@app.route('/v1/unmix_youtube', methods=['POST'])
+def unmix_youtube():
+    if 'url' not in request.json:
+        return "No url in request", 400
+    url = request.json['url']
 
-        except Exception as e:
-            # Log the exception message and traceback
-            print(f"Exception occurred: {str(e)}")
-            traceback.print_exc()
-            return str(e), 500
+    output_directory = os.path.join('tmp', 'unmixed')  # Set the output directory path
+    create_output_directory(output_directory)
 
-        return send_file(output_zip_path, mimetype='application/zip', as_attachment=True)
+    try:
+        unmixer = AudioUnmix()
+        output_zip_path = run_audio_unmix(unmixer.run_from_youtube, output_directory, url)
 
+    except Exception as e:
+        return str(e), 500
 
-api.add_resource(UnmixResource, '/v1/unmix')
-api.add_resource(UnmixYoutubeResource, '/v1/unmix_youtube')
+    return send_file(output_zip_path, mimetype='application/zip', as_attachment=True)
 
 if __name__ == '__main__':
     app.run(debug=True)
