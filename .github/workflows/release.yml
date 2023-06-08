@@ -31,7 +31,7 @@ jobs:
 
     - name: Deploy to Cloud Run
       run: |-
-        gcloud run deploy topics-audio-ml-infrastructure --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/topics-audio-ml-infrastructure:${{ steps.get_version.outputs.VERSION }} --port 80 --platform managed
+        gcloud run deploy topics-audio-ml-infrastructure --region us-central1 --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/topics-audio-ml-infrastructure:${{ steps.get_version.outputs.VERSION }} --port 80 --platform managed
 
     - name: Create Release
       id: create_release
