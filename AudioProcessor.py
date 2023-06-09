@@ -54,10 +54,10 @@ class AudioAnalyzer:
         self.hop_size = hop_size
         self.samplerate = samplerate
         self.target_functions = {
-            "bass": self.analyze_bass,
-            "drums": self.analyze_drums,
-            "vocals": self.analyze_vocals,
-            "other": self.analyze_others
+            "bass": self.summarize_bass_analysis,
+            "drums": self.summarize_drums_analysis,
+            "vocals": self.summarize_vocals_analysis,
+            "other": self.summarize_others_analysis
         }
         self.samples = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -70,6 +70,79 @@ class AudioAnalyzer:
         else:
             raise ValueError(f"Unknown target: {target}")
         
+
+    def frequency_to_midi(self, frequency):
+        return round(69 + 12 * np.log2(frequency / 440))
+
+    def midi_to_note(self, midi):
+        # mapping of MIDI note number to note names
+        notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        octave = int(midi / 12) - 1
+        note_idx = int(midi % 12)  # ensure note_idx is an integer
+        return notes[note_idx] + str(octave)
+    
+    def summarize_bass_analysis(self, audio_file_path):
+        analysis = self.analyze_bass(audio_file_path)
+
+        pitch_analysis = analysis["pitch"]
+        onset_analysis = analysis["onset"]
+
+        pitch_summary = [self.midi_to_note(self.frequency_to_midi(pitch[0])) for pitch in pitch_analysis if pitch[0] > 0]
+        onset_summary = [f"{i*self.hop_size/self.samplerate:.2f} seconds" for i, onset in enumerate(onset_analysis) if onset[0] > 0.5]
+
+        return {
+            "pitch": " -> ".join(pitch_summary),
+            "onset": ", ".join(onset_summary)
+        }
+
+    def summarize_drums_analysis(self, audio_file_path):
+        analysis = self.analyze_drums(audio_file_path)
+
+        onset_analysis = analysis["onset"]
+        tempo_analysis = analysis["tempo"]
+
+        onset_summary = [f"{i*self.hop_size/self.samplerate:.2f} seconds" for i, onset in enumerate(onset_analysis) if onset[0] > 0.5]
+        tempo_summary = [f"Beat at {i*self.hop_size/self.samplerate:.2f} seconds" for i, tempo in enumerate(tempo_analysis) if tempo[0] > 0]
+
+        return {
+            "onset": ", ".join(onset_summary),
+            "tempo": ", ".join(tempo_summary)
+        }
+
+    def summarize_vocals_analysis(self, audio_file_path):
+        analysis = self.analyze_vocals(audio_file_path)
+
+        pitch_analysis = analysis["pitch"]
+        onset_analysis = analysis["onset"]
+        notes_analysis = analysis["notes"]
+
+        pitch_summary = [self.midi_to_note(self.frequency_to_midi(pitch[0])) for pitch in pitch_analysis if pitch[0] > 0]
+        onset_summary = [f"{i*self.hop_size/self.samplerate:.2f} seconds" for i, onset in enumerate(onset_analysis) if onset[0] > 0.5]
+        notes_summary = [self.midi_to_note(note[0]) for note in notes_analysis if note[0] > 0]
+
+        return {
+            "pitch": " -> ".join(pitch_summary),
+            "onset": ", ".join(onset_summary),
+            "notes": ", ".join(notes_summary)
+        }
+
+    def summarize_others_analysis(self, audio_file_path):
+        analysis = self.analyze_others(audio_file_path)
+
+        pitch_analysis = analysis["pitch"]
+        onset_analysis = analysis["onset"]
+        notes_analysis = analysis["notes"]
+
+        pitch_summary = [self.midi_to_note(self.frequency_to_midi(pitch[0])) for pitch in pitch_analysis if pitch[0] > 0]
+        onset_summary = [f"{i*self.hop_size/self.samplerate:.2f} seconds" for i, onset in enumerate(onset_analysis) if onset[0] > 0.5]
+        notes_summary = [self.midi_to_note(note[0]) for note in notes_analysis if note[0] > 0]
+
+        return {
+            "pitch": " -> ".join(pitch_summary),
+            "onset": ", ".join(onset_summary),
+            "notes": ", ".join(notes_summary)
+        }
+    
     def analyze_bass(self, audio_file_path):
         return {
             "pitch": self._pitch_analysis(audio_file_path),
@@ -96,6 +169,7 @@ class AudioAnalyzer:
             "notes": self._notes_analysis(audio_file_path),
         }
 
+    
     def _onset_analysis(self, audio_file_path):
         onset = aubio.onset("default", self.buf_size, self.hop_size, self.samplerate)
         samples = self._read_samples(audio_file_path)
