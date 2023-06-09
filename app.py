@@ -1,11 +1,11 @@
 import os
-import shutil
 import tempfile
 import traceback
 import zipfile
 from flask import Flask, request, send_file
-from flask_restful import Api, Resource
-from AudioUnmix import AudioUnmix
+from flask_restful import Api
+from AudioProcessor import AudioUnmix
+import json
 
 # Create Flask app
 app = Flask(__name__)
@@ -14,9 +14,14 @@ api = Api(app)
 def create_output_directory(directory):
     os.makedirs(directory, exist_ok=True)
 
+
 def run_audio_unmix(unmix_func, output_directory, *args):
     try:
-        unmix_func(*args, output_directory)
+        analysis_results = unmix_func(*args, output_directory)
+
+        # Save analysis results to a json file
+        with open(os.path.join(output_directory, 'analysis_results.json'), 'w') as f:
+            json.dump(analysis_results, f)
 
         # Create a zip file
         output_zip_path = os.path.join('tmp', 'audio_separated.zip')
@@ -28,7 +33,6 @@ def run_audio_unmix(unmix_func, output_directory, *args):
         return output_zip_path
 
     except Exception as e:
-        # Log the exception message and traceback
         print(f"Exception occurred: {str(e)}")
         traceback.print_exc()
         raise
