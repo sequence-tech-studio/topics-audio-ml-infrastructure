@@ -1,3 +1,4 @@
+python-dotenv 
 torch
 torchaudio
 openunmix
@@ -11,4 +12,4 @@ wheel
 setuptools
 numpy
 aubio
-matplotlib
+firebase_admin

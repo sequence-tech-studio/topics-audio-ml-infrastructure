@@ -27,7 +27,8 @@ class AudioUnmix:
         hop_s = 256 // downsample  # hop size
         converted_file_path = file_path + '.pcm.wav'
         self.convert_to_pcm_wav(file_path, converted_file_path)
-
+        print(f"Analyzing {file_path}...")\
+        
         s = aubio.source(converted_file_path, samplerate, hop_s)
         samplerate = s.samplerate
 
@@ -35,6 +36,7 @@ class AudioUnmix:
 
         notes_o = aubio.notes("default", win_s, hop_s, samplerate)
         detected_notes = []
+        
 
         # total number of frames read
         total_frames = 0
@@ -53,6 +55,40 @@ class AudioUnmix:
             if read < hop_s: break
         os.remove(converted_file_path)
         return detected_notes
+    
+    def drums_analysis(self, file_path, win_s=512, hop_s=256):
+        samplerate = 0  # let aubio automatically determine the samplerate
+        converted_file_path = file_path + '.pcm.wav'
+        self.convert_to_pcm_wav(file_path, converted_file_path)
+        s = aubio.source(converted_file_path, samplerate, hop_s)
+        
+
+        # create a 'tempo' object that stores and computes BPM
+        o = aubio.tempo("default", win_s, hop_s, samplerate)
+
+        bpm_estimates = []
+        total_frames = 0
+
+        while True:
+            # read from audio file
+            samples, read = s()
+
+            # calculate bpm for current frame
+            is_beat = o(samples)
+            if is_beat:
+                this_bpm = o.get_bpm()
+                if this_bpm > 0:  # check if valid BPM is calculated
+                    bpm_estimates.append(this_bpm)
+
+            # increment total frames
+            total_frames += read
+            if read < hop_s:
+                break
+
+        # Calculate average BPM
+        average_bpm = sum(bpm_estimates) / len(bpm_estimates) if bpm_estimates else 0
+
+        return {"bpm": average_bpm}
 
     def run(self, audio_file_path, out_dir):
         audio, rate = torchaudio.load(audio_file_path)
@@ -75,19 +111,24 @@ class AudioUnmix:
             # Analyze the separated audio
             if target != 'drums':
                 analysis_results[target] = self.analyze(file_path)
+            # else:
+            #     analysis_results[target] = self.drums_analysis(file_path)
 
         return analysis_results
             
-    def run_from_youtube(self, url, out_dir):
+    def run_from_youtube(self, url, out_dir):   
+        print("url:", url)  # Add this line
+        print("out_dir:", out_dir)  # Add this line
+        print("Downloading audio from youtube...")
+        print(out_dir)
         ydl_opts = {
             'format': 'bestaudio/best',
             'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'wav',
-            }],
-            'outtmpl': 'tmp/temp',
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+        }],
+        'outtmpl': os.path.join(out_dir, 'temp'),
         }
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-
-        self.run('tmp/temp.wav', out_dir)
+        self.run(os.path.join(out_dir, 'temp.wav'), out_dir) 

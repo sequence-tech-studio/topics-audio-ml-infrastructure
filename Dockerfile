@@ -7,6 +7,9 @@ WORKDIR /
 # Add the current directory contents into the container at /
 ADD . /
 
+ENV GOOGLE_APPLICATION_CREDENTIALS=/service-account.json
+
+
 # Install system libraries
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -19,6 +22,7 @@ RUN apt-get update && apt-get install -y \
 # Check if ffmpeg and ffprobe installed
 RUN which ffmpeg
 RUN which ffprobe
+
 # Install aubio dependencies
 RUN pip install --upgrade --use-pep517 pip setuptools wheel  
 # Install any needed packages specified in requirements.txt

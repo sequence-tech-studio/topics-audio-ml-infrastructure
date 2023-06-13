@@ -25,6 +25,11 @@ jobs:
       id: get_version
       run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
 
+    - name: Generate service account file
+      run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > service_account.json
+      env:
+        FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
     - name: Build and Push Docker image
       run: |-
         gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/topics-audio-ml-infrastructure:${{ steps.get_version.outputs.VERSION }}
